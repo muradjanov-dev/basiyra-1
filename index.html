@@ -240,8 +240,10 @@ footer .brand{font-size:18px;color:var(--ivory)}
 
 
 /* ---------- 3D studio ---------- */
-.fv{position:fixed;inset:0;z-index:45;visibility:hidden;pointer-events:none;opacity:0;--pw:400px;background:radial-gradient(110% 90% at 38% 40%,#1a2530 0%,#0c1116 58%,#06090c 100%)}
+.fv{position:fixed;inset:0;z-index:45;visibility:hidden;pointer-events:none;opacity:0;--pw:400px;background-color:#0a0e12;background-image:radial-gradient(110% 90% at 38% 40%,#1a2530 0%,#0c1116 58%,#06090c 100%);transition:opacity .7s ease}
 .fv.on{visibility:visible;pointer-events:auto}
+.fv.shown{opacity:1;transition:opacity .85s ease .4s}
+body.fv-open .top,body.fv-open .rail,body.fv-open .cur{opacity:0!important;pointer-events:none}
 .st-view{position:absolute;left:0;top:0;bottom:0;right:var(--pw);overflow:hidden}
 #stCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab;transition:opacity .6s}
 #stCanvas:active{cursor:grabbing}
@@ -260,8 +262,9 @@ footer .brand{font-size:18px;color:var(--ivory)}
 .plan2d .dim{stroke:rgba(241,235,225,.5);stroke-width:.025;fill:none}.plan2d .dt{font-size:.34px;fill:var(--stone)}
 .st-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .fv.p2d .st-labels{display:none}
-.lbl3{position:absolute;left:0;top:0;transition:opacity .35s;will-change:transform}
-.chip.unit{pointer-events:auto;display:flex;gap:10px;align-items:center;background:rgba(9,13,17,.74);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:999px;padding:7px 10px 7px 14px;font-size:12px;white-space:nowrap;transition:transform .3s var(--ease),background .3s}
+.lbl3{position:absolute;left:0;top:0;transition:opacity .35s;animation:lblIn .6s var(--ease) both}
+@keyframes lblIn{from{opacity:0}}
+.chip.unit{pointer-events:auto;display:flex;gap:10px;align-items:center;color:var(--ivory);background:rgba(9,13,17,.9);border:1px solid rgba(241,235,225,.22);border-radius:999px;padding:7px 10px 7px 14px;font-size:12px;white-space:nowrap;transition:transform .3s var(--ease),background .3s}
 .chip.unit:hover{transform:translateY(-2px);background:rgba(9,13,17,.92)}
 .chip.unit b{font-family:var(--display);font-weight:400;font-size:20px}
 .chip.unit.sold{opacity:.55;pointer-events:none}
@@ -1104,7 +1107,7 @@ function loadThree() {
   if (threeReady) return threeReady;
   const base = "https://cdn.jsdelivr.net/npm/three@0.147.0/";
   const load = src => new Promise((res, rej) => { const s = document.createElement("script"); s.src = base + src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-  threeReady = load("build/three.min.js").then(() => Promise.all(["examples/js/controls/OrbitControls.js", "examples/js/environments/RoomEnvironment.js", "examples/js/geometries/RoundedBoxGeometry.js"].map(load)));
+  threeReady = load("build/three.min.js").then(() => Promise.all(["examples/js/controls/OrbitControls.js", "examples/js/environments/RoomEnvironment.js", "examples/js/geometries/RoundedBoxGeometry.js", "examples/js/utils/BufferGeometryUtils.js"].map(load)));
   return threeReady;
 }
 
@@ -1140,7 +1143,9 @@ function makeMats() {
     turq: M(0x3fa49d, .8), terra: M(0xb46a4c, .85), brass: M(0xb89252, .35, .8), leaf: M(0x4f6b3a, .85), leaf2: M(0x6d8a45, .85), pot: M(0xb9a690, .8), potT: M(0xa86a4a, .85), screen: M(0x0b0d10, .15, .3),
     rugA: M(0xffffff, .98, 0, { map: texRug(0) }), rugB: M(0xffffff, .98, 0, { map: texRug(1) }), water: M(0xdfeef2, .05, 0, { transparent: true, opacity: .7 }),
     pCold: M(0x3d8cff, .35, .2, { emissive: 0x1f5fd0, emissiveIntensity: 1.1 }), pHot: M(0xff5a46, .35, .2, { emissive: 0xc0281a, emissiveIntensity: 1.1 }), pSew: M(0xb8c0c8, .45, .2, { emissive: 0x5a6068, emissiveIntensity: .7 }), pElec: M(0xffd23f, .4, .1, { emissive: 0xd9a800, emissiveIntensity: 1.2 }), xfloor: M(0x1a2129, .9), socket: M(0xffffff, .3), lightOn: new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe2a8, emissiveIntensity: 2.2 }),
-    hl: M(0x4fb6ae, .6, 0, { transparent: true, opacity: .35, depthWrite: false }), ghost: new THREE.LineBasicMaterial({ color: 0xb4aa98, transparent: true, opacity: .45 })
+    hl: M(0x4fb6ae, .6, 0, { transparent: true, opacity: .35, depthWrite: false }),
+    shade: new THREE.MeshStandardMaterial({ color: 0xf3ead8, emissive: 0xffd9a0, emissiveIntensity: .45, roughness: .9 }), blob: new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .14, depthWrite: false }),
+    books: [0x8c3f2c, 0x2f4a6b, 0xd9a441, 0x3fa49d, 0xe9dfcc, 0x4a3122].map(c => M(c, .8)), ghost: new THREE.LineBasicMaterial({ color: 0xb4aa98, transparent: true, opacity: .45 })
   };
 }
 const rbox = (w, h, d, r, mat) => { const g = (THREE.RoundedBoxGeometry && r > 0) ? new THREE.RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - .001, h / 2 - .001, d / 2 - .001)) : new THREE.BoxGeometry(w, h, d); const m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true; return m; };
@@ -1174,7 +1179,7 @@ function furn(type, o = {}) {
     case "ctable": g.add(at(cyl(.5, .5, .05, m.marble, 40), 0, .4, 0)); g.add(at(cyl(.3, .34, .37, m.walnut, 30), 0, .19, 0)); g.add(at(cyl(.12, .1, .12, m.turq, 16), .18, .48, .05)); break;
     case "side": g.add(at(cyl(.22, .22, .04, m.marble, 28), 0, .52, 0)); g.add(at(cyl(.05, .07, .5, m.brass, 12), 0, .25, 0)); break;
     case "tvunit": g.add(at(rbox(w, .42, .45, .02, m.walnut), 0, .26, 0)); g.add(at(rbox(1.55, .9, .04, .01, m.screen), 0, 1.3, -.18)); [-1, 1].forEach(s => g.add(at(cyl(.1, .1, .18, m.pot, 16), s * .8, .56, 0))); break;
-    case "lamp": g.add(at(cyl(.16, .18, .03, m.brass), 0, .015, 0)); g.add(at(cyl(.012, .012, 1.5, m.brass, 8), 0, .76, 0)); g.add(at(cyl(.17, .22, .3, new THREE.MeshStandardMaterial({ color: 0xf3ead8, emissive: 0xffd9a0, emissiveIntensity: .5, roughness: .9 }), 24), 0, 1.55, 0)); break;
+    case "lamp": g.add(at(cyl(.16, .18, .03, m.brass), 0, .015, 0)); g.add(at(cyl(.012, .012, 1.5, m.brass, 8), 0, .76, 0)); g.add(at(cyl(.17, .22, .3, m.shade, 24), 0, 1.55, 0)); break;
     case "plant": case "plantS": {
       const big = type === "plant"; g.add(at(cyl(big ? .24 : .17, big ? .19 : .14, big ? .48 : .36, big ? m.pot : m.potT, 24), 0, big ? .24 : .18, 0));
       const n = big ? 9 : 6; for (let i = 0; i < n; i++) { const r = (big ? .22 : .15) * (.6 + rnd() * .6); const s = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), rnd() < .5 ? m.leaf : m.leaf2); s.castShadow = true; s.position.set((rnd() - .5) * (big ? .45 : .25), (big ? .75 : .5) + rnd() * (big ? .9 : .4), (rnd() - .5) * (big ? .45 : .25)); g.add(s); }
@@ -1213,10 +1218,10 @@ function furn(type, o = {}) {
       g.add(at(rbox(W + .3, 1.1, .1, .04, m.fabric2), 0, .62, -D / 2 - .03));
       break;
     }
-    case "night": g.add(at(rbox(.5, .48, .4, .02, m.walnut), 0, .26, 0)); g.add(at(cyl(.07, .09, .25, m.brass, 16), .05, .62, 0)); g.add(at(cyl(.13, .16, .18, new THREE.MeshStandardMaterial({ color: 0xf3ead8, emissive: 0xffd9a0, emissiveIntensity: .4, roughness: .9 }), 20), .05, .83, 0)); break;
+    case "night": g.add(at(rbox(.5, .48, .4, .02, m.walnut), 0, .26, 0)); g.add(at(cyl(.07, .09, .25, m.brass, 16), .05, .62, 0)); g.add(at(cyl(.13, .16, .18, m.shade, 20), .05, .83, 0)); break;
     case "desk": g.add(at(rbox(w, .04, d, .01, m.walnut), 0, .75, 0)); [-1, 1].forEach(s => g.add(at(rbox(.04, .73, d - .06, .01, m.black), s * (w / 2 - .05), .37, 0))); g.add(at(rbox(.55, .33, .02, .01, m.screen), 0, 1.0, -.18)); break;
     case "ochair": g.add(at(rbox(.5, .08, .48, .04, m.black), 0, .48, 0)); g.add(at(rbox(.46, .55, .06, .04, m.black), 0, .82, -.2)); g.add(at(cyl(.03, .03, .4, m.steel, 10), 0, .25, 0)); g.add(at(cyl(.3, .3, .03, m.steel, 5), 0, .04, 0)); break;
-    case "shelf": { g.add(at(rbox(w, 2.2, d, .01, m.walnut), 0, 1.1, 0)); const cols = [0x8c3f2c, 0x2f4a6b, 0xd9a441, 0x3fa49d, 0xe9dfcc, 0x4a3122]; for (let s = 0; s < 5; s++) for (let b = 0; b < 12; b++) { if (rnd() < .25) continue; const bw = .03 + rnd() * .04, bh = .22 + rnd() * .1; g.add(at(new THREE.Mesh(new THREE.BoxGeometry(bw, bh, d - .08), M(cols[(rnd() * cols.length) | 0], .8)), -w / 2 + .1 + b * (w - .2) / 12, .25 + s * .42 + bh / 2, .03)); } break; }
+    case "shelf": { g.add(at(rbox(w, 2.2, d, .01, m.walnut), 0, 1.1, 0)); const cols = [0x8c3f2c, 0x2f4a6b, 0xd9a441, 0x3fa49d, 0xe9dfcc, 0x4a3122]; for (let s = 0; s < 5; s++) for (let b = 0; b < 12; b++) { if (rnd() < .25) continue; const bw = .03 + rnd() * .04, bh = .22 + rnd() * .1; g.add(at(new THREE.Mesh(new THREE.BoxGeometry(bw, bh, d - .08), m.books[(rnd() * 6) | 0]), -w / 2 + .1 + b * (w - .2) / 12, .25 + s * .42 + bh / 2, .03)); } break; }
     case "lounge": g.add(at(rbox(.7, .3, .7, .05, m.walnut), 0, .2, 0)); g.add(at(rbox(.62, .1, .62, .04, m.linen), 0, .4, .03)); g.add(at(rbox(.62, .4, .1, .04, m.linen), 0, .62, -.3)); break;
     case "planter": g.add(at(rbox(w, .5, d, .03, m.pot), 0, .25, 0)); for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.IcosahedronGeometry(.16 + rnd() * .1, 1), m.leaf2); s.castShadow = true; s.position.set((rnd() - .5) * (w - .2), .6 + rnd() * .3, (rnd() - .5) * (d - .1)); g.add(s); } break;
     case "shower": { g.add(at(rbox(w, .04, d, .01, m.porcelain), 0, .02, 0)); const gl = new THREE.Mesh(new THREE.BoxGeometry(w, 2.0, .01), S.mats.glass); gl.position.set(0, 1.04, d / 2); g.add(gl); const gl2 = new THREE.Mesh(new THREE.BoxGeometry(.01, 2.0, d), S.mats.glass); gl2.position.set(w / 2, 1.04, 0); g.add(gl2); g.add(at(cyl(.12, .12, .01, m.steel, 20), 0, 2.15, -.1)); break; }
@@ -1296,17 +1301,54 @@ function buildApt(plan) {
   const rail = new THREE.Mesh(new THREE.BoxGeometry(.02, 1.05, br[3] - br[1]), S.mats.glass); rail.position.set(railX, .55, (br[1] + br[3]) / 2); walls.add(rail);
   const cap = new THREE.Mesh(new THREE.BoxGeometry(.05, .04, br[3] - br[1]), S.mats.frame); cap.position.set(railX, 1.08, (br[1] + br[3]) / 2); walls.add(cap);
   const bslab = new THREE.Mesh(new THREE.BoxGeometry(br[2] - br[0], .22, br[3] - br[1]), S.mats.slab); bslab.position.set((br[0] + br[2]) / 2, -.17, (br[1] + br[3]) / 2); bslab.receiveShadow = true; g.add(bslab);
-  plan.items.forEach(it => addItem(plan, furnG, it));
+  plan.items.forEach(it => addItem(plan, it.type === "pendant" ? ceil : furnG, it));
   ceil.visible = false;
   const b = plan.box, aslab = new THREE.Mesh(new THREE.BoxGeometry(b[2] - b[0], .32, b[3] - b[1]), S.mats.slab); aslab.position.set((b[0] + b[2]) / 2, -.17, (b[1] + b[3]) / 2); aslab.receiveShadow = true; aslab.visible = false; g.userData.slab = aslab; g.add(aslab);
   const aband = new THREE.Mesh(new THREE.BoxGeometry(b[2] - b[0] + .02, .06, b[3] - b[1] + .02), S.mats.slabEdge); aband.position.set((b[0] + b[2]) / 2, -.3, (b[1] + b[3]) / 2); aband.visible = false; g.userData.band = aband; g.add(aband);
   g.add(floors, walls, furnG, ceil);
-  return { g, walls, furn: furnG, floors, ceil, plan, mep: null };
+  const A = { g, walls, furn: furnG, floors, ceil, plan, mep: null, bake: null };
+  rebake(A);
+  return A;
+}
+/* ---------- static batching: merge every static mesh by material (≈10× fewer draw calls) ---------- */
+const wallOf = o => { for (let p = o; p; p = p.parent) if (p.userData && p.userData.wall) return p.userData.wall; return null; };
+function sliceGeo(g, start, count) { const n = new THREE.BufferGeometry(); ["position", "normal", "uv"].forEach(k => { const a = g.attributes[k]; n.setAttribute(k, new THREE.BufferAttribute(a.array.slice(start * a.itemSize, (start + count) * a.itemSize), a.itemSize)); }); return n; }
+function bakeInto(src, filter) {
+  src.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(src.matrixWorld).invert(), m4 = new THREE.Matrix4(), buckets = new Map();
+  const push = (mat, g) => { let a = buckets.get(mat); if (!a) buckets.set(mat, a = []); a.push(g); };
+  src.traverse(o => {
+    if (!o.isMesh) return;
+    for (let q = o; q && q !== src; q = q.parent) if (!q.visible) return;
+    if (filter && !filter(o)) return;
+    m4.multiplyMatrices(inv, o.matrixWorld);
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    Object.keys(g.attributes).forEach(k => { if (!["position", "normal", "uv"].includes(k)) g.deleteAttribute(k); });
+    if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    g.applyMatrix4(m4);
+    if (Array.isArray(o.material)) { o.geometry.groups.forEach(gr => push(o.material[gr.materialIndex], sliceGeo(g, gr.start, gr.count))); g.dispose(); }
+    else { g.clearGroups(); push(o.material, g); }
+  });
+  const out = new THREE.Group();
+  buckets.forEach((geos, mat) => {
+    const mg = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false); geos.forEach(x => x.dispose()); if (!mg) return;
+    const mesh = new THREE.Mesh(mg, mat); mesh.castShadow = !mat.transparent && mat !== S.mats.blob; mesh.receiveShadow = true; out.add(mesh);
+  });
+  return out;
+}
+function rebake(A) {
+  if (A.bake) { A.g.remove(A.bake.root); A.bake.root.traverse(o => o.geometry && o.geometry.dispose()); }
+  A.walls.visible = A.furn.visible = true;
+  const root = new THREE.Group(), wallH = new THREE.Group(); wallH.scale.y = A.walls.scale.y;
+  const ext = bakeInto(A.walls, o => { const w = wallOf(o); return !w || w.ext; }), int = bakeInto(A.walls, o => { const w = wallOf(o); return !!w && !w.ext; });
+  wallH.add(ext, int); const furnB = bakeInto(A.furn); root.add(wallH, furnB); A.g.add(root);
+  A.bake = { root, wallH, ext, int, furn: furnB };
+  A.walls.visible = A.furn.visible = false; S.shadowDirty = true;
 }
 function addItem(plan, parent, it) {
   const o = furn(it.type, it.o); o.position.set(it.x, 0, it.y); o.rotation.y = THREE.MathUtils.degToRad(it.rot);
   o.userData.item = it; o.userData.plan = plan;
-  if (it.type !== "riser") { const [w, d] = [o.userData.w, o.userData.d]; const sh = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.15, d * 1.15), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .14, depthWrite: false })); sh.rotation.x = -Math.PI / 2; sh.position.y = .03; o.add(sh); }
+  if (it.type !== "riser") { const [w, d] = [o.userData.w, o.userData.d]; const sh = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.15, d * 1.15), S.mats.blob); sh.castShadow = false; sh.rotation.x = -Math.PI / 2; sh.position.y = .03; o.add(sh); }
   parent.add(o); return o;
 }
 
@@ -1329,7 +1371,8 @@ function buildCore() {
   [[16.6, 2.4], [16.6, 19.6]].forEach(([x, y]) => [[S.mats.pCold, -.35], [S.mats.pHot, -.1], [S.mats.pSew, .2]].forEach(([mt, dx]) => { const p = cyl(.06, .06, WALL_H, mt, 12); p.position.set(x + dx, WALL_H / 2, y); walls.add(p); }));
   for (let i = 0; i < 3; i++) { const c = rbox(.6, 2.0, .4, .01, M(0x8d949b, .5, .5)); c.position.set(13.95 + i * .65, 1.0, .6); walls.add(c); }
   g.add(walls);
-  return { g, walls };
+  const C = { g, walls }; const wallH = new THREE.Group(); wallH.scale.y = walls.scale.y; wallH.add(bakeInto(walls)); g.add(wallH); walls.visible = false; C.wallH = wallH;
+  return C;
 }
 
 /* ---------- MEP routing (water, sewer, power) ---------- */
@@ -1373,33 +1416,43 @@ function buildMEP(A) {
 }
 
 /* ---------- scene setup ---------- */
-function initStudio() {
+function initRenderer() {
   const canvas = $("#stCanvas");
   const R = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-  R.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75)); R.outputEncoding = THREE.sRGBEncoding; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = .86;
-  R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap; R.shadowMap.autoUpdate = true;
+  R.setPixelRatio(Math.min(devicePixelRatio || 1, FINE ? 1.75 : 1.5)); R.outputEncoding = THREE.sRGBEncoding; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = .86;
+  R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap; R.shadowMap.autoUpdate = false;
   const scene = new THREE.Scene();
-  const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture;
+  const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; pm.dispose();
   const cam = new THREE.PerspectiveCamera(34, 1, .05, 400);
-  const hemi = new THREE.HemisphereLight(0xfff1e0, 0x2c261f, .32); scene.add(hemi);
+  scene.add(new THREE.HemisphereLight(0xfff1e0, 0x2c261f, .32));
   const sun = new THREE.DirectionalLight(0xffdcb0, 2.1); sun.position.set(-14, 26, 9); sun.target.position.set(17, 0, 11);
-  sun.castShadow = true; sun.shadow.mapSize.set(innerWidth > 900 ? 4096 : 2048, innerWidth > 900 ? 4096 : 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90 }); sun.shadow.bias = -.0003; sun.shadow.normalBias = .02; sun.shadow.radius = 4;
+  const sm = FINE && innerWidth > 1100 ? 4096 : 2048;
+  sun.castShadow = true; sun.shadow.mapSize.set(sm, sm); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90 }); sun.shadow.bias = -.0003; sun.shadow.normalBias = .02; sun.shadow.radius = 4;
   scene.add(sun, sun.target);
   const root = new THREE.Group(); scene.add(root);
   makeMats();
   new THREE.TextureLoader().load("media/city_start.jpg", tx => { tx.encoding = THREE.sRGBEncoding; tx.wrapS = THREE.RepeatWrapping; tx.repeat.set(3, 1);
     const pano = new THREE.Mesh(new THREE.CylinderGeometry(70, 70, 46, 64, 1, true), new THREE.MeshBasicMaterial({ map: tx, side: THREE.BackSide, toneMapped: false, color: 0xd8d2c8 }));
     pano.position.set(17, 6, 11); pano.visible = false; scene.add(pano); S.pano = pano; });
-  // slab under the plate + turquoise edge band
   const slab = new THREE.Mesh(new THREE.BoxGeometry(PW, .32, PD), S.mats.slab); slab.position.set(PW / 2, -.17, PD / 2); slab.receiveShadow = true; root.add(slab);
   const band = new THREE.Mesh(new THREE.BoxGeometry(PW + .02, .06, PD + .02), S.mats.slabEdge); band.position.set(PW / 2, -.3, PD / 2); root.add(band); S.slab = [slab, band];
-  S.core = buildCore(); root.add(S.core.g);
-  APTS.forEach(ap => { const A = buildApt(PLANS[ap.k]); S.apts[ap.k] = A; root.add(A.g); });
   const controls = new THREE.OrbitControls(cam, canvas); controls.enableDamping = true; controls.dampingFactor = .08; controls.minDistance = 4; controls.maxDistance = 90; controls.maxPolarAngle = 1.36; controls.screenSpacePanning = true; controls.target.set(17, 0, 11);
-  Object.assign(S, { renderer: R, scene, camera: cam, controls, root, sun, built: true });
+  Object.assign(S, { renderer: R, scene, camera: cam, controls, root, sun });
   ray = new THREE.Raycaster(); ndc = new THREE.Vector2(); floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  resizeStudio(); bindStudioInput(canvas);
+  bindStudioInput(canvas);
 }
+async function initStudioAsync() {
+  const idle = () => new Promise(r => window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 300 }) : setTimeout(r, 16));
+  initRenderer(); await idle();
+  S.core = buildCore(); S.root.add(S.core.g);
+  for (const ap of APTS) { await idle(); const A = buildApt(PLANS[ap.k]); S.apts[ap.k] = A; S.root.add(A.g); }
+  await idle();
+  resizeStudio(); S.camera.position.set(17, .4, 81); S.controls.target.set(17, .2, 11); S.camera.lookAt(S.controls.target);
+  S.renderer.compile(S.scene, S.camera); S.renderer.shadowMap.needsUpdate = true; S.renderer.render(S.scene, S.camera); S.shadowDirty = false;
+  S.built = true;
+}
+let warmP = null;
+function prewarm() { if (!warmP) warmP = loadThree().then(() => initStudioAsync()).catch(e => { console.error("studio", e); throw e; }); return warmP; }
 function resizeStudio() { if (!S.built) return; const el = $("#stView"), w = el.clientWidth, h = el.clientHeight; S.renderer.setSize(w, h, false); S.camera.aspect = w / h; S.camera.updateProjectionMatrix(); }
 addEventListener("resize", () => { resizeStudio(); if (S.plan2d) renderPlan2D(); });
 
@@ -1425,10 +1478,10 @@ function flyTo(pos, tgt, dur = 1600, ease = easeC, opt = {}) {
 const aptCenter = k => { const b = PLANS[k].box; return [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]; };
 const FLOOR_VIEW = () => { const asp = S.camera.aspect, tf = Math.tan(THREE.MathUtils.degToRad(S.camera.fov / 2)), d = Math.max(27 / tf * .5, 40 / (2 * tf * asp)) * 1.05; return [[17, d * .8, 11 + d * .6], [17, 0, 10.4]]; };
 function aptView(k) { const [cx, cy] = aptCenter(k), asp = S.camera.aspect, tf = Math.tan(THREE.MathUtils.degToRad(S.camera.fov / 2)), d = Math.max(14 / tf * .5, 18 / (2 * tf * asp)) * 1.08, side = PLANS[k].ap.my ? -1 : 1; return [[cx + (PLANS[k].ap.mx ? -3 : 3), d * .82, cy + side * d * .58], [cx, 0, cy]]; }
-function setWallScale(v) { Object.values(S.apts).forEach(A => A.walls.scale.y = v); S.core.walls.scale.y = v; }
+function setWallScale(v) { Object.values(S.apts).forEach(A => { A.walls.scale.y = v; if (A.bake) A.bake.wallH.scale.y = v; }); S.core.walls.scale.y = v; S.core.wallH.scale.y = v; S.shadowDirty = true; }
 function isolate(k) {
   Object.entries(S.apts).forEach(([kk, A]) => { A.g.visible = !k || kk === k; A.g.userData.slab.visible = A.g.userData.band.visible = !!k; });
-  S.core.g.visible = !k; S.slab.forEach(m => m.visible = !k);
+  S.core.g.visible = !k; S.slab.forEach(m => m.visible = !k); S.shadowDirty = true;
   if (S.ghost) { S.root.remove(S.ghost); S.ghost = null; }
   if (k) { // faint outlines of the rest of the floor for context
     const gg = new THREE.Group(); Object.keys(S.apts).filter(x => x !== k).forEach(x => { const b = PLANS[x].box; const pts = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]].map(([x, y]) => new THREE.Vector3(x, .03, y)); gg.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), S.mats.ghost)); });
@@ -1492,7 +1545,7 @@ function bindStudioInput(cv) {
   cv.addEventListener("pointermove", e => {
     if (!down) { if (S.edit === "walldel") hoverWall(e); if (S.edit === "walladd" && S.wallStart) previewWall(e); return; }
     if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4) moved = true;
-    if (dragItem) { const p = floorPoint(e); if (p) { const b = PLANS[S.focus].box; dragItem.position.x = clamp(snap(p.x + dragItem._off[0]), b[0] - 1.5, b[2] + 1.5); dragItem.position.z = clamp(snap(p.z + dragItem._off[1]), b[1], b[3]); const it = dragItem.userData.item; it.x = dragItem.position.x; it.y = dragItem.position.z; placeSelBox(); } return; }
+    if (dragItem) { const p = floorPoint(e); if (p) { const b = PLANS[S.focus].box; S.shadowDirty = true; dragItem.position.x = clamp(snap(p.x + dragItem._off[0]), b[0] - 1.5, b[2] + 1.5); dragItem.position.z = clamp(snap(p.z + dragItem._off[1]), b[1], b[3]); const it = dragItem.userData.item; it.x = dragItem.position.x; it.y = dragItem.position.z; placeSelBox(); } return; }
     if (S.inside && moved) { S.look.yaw = down.yaw - (e.clientX - down.x) * .0042; S.look.pitch = clamp(down.pitch - (e.clientY - down.y) * .0036, -1.1, 1.0); applyLook(); }
   });
   cv.addEventListener("pointerup", e => {
@@ -1520,7 +1573,6 @@ async function stepInsideStudio() {
   const k = S.focus; if (!k) return; S.inside = true; S.controls.enabled = false; buildLabels();
   const { eye, look } = liveSpot(k);
   S.apts[k].ceil.visible = true; if (S.pano) S.pano.visible = true;
-  S.apts[k].furn.children.forEach(o => { if (o.userData.ceiling) o.visible = true; });
   await flyTo(eye, look, 2600, easeC, { fov: 64, arc: 3, onT: e => setWallScale(CUT + (1 - CUT) * clamp((e - .35) / .5)) });
   const d = new THREE.Vector3(look[0] - eye[0], look[1] - eye[1], look[2] - eye[2]).normalize();
   S.look.yaw = Math.atan2(-d.x, -d.z); S.look.pitch = Math.asin(d.y); applyLook();
@@ -1540,16 +1592,16 @@ function walkTo(p) {
 let selBox = null;
 function selectItem(o) { S.sel = o; if (selBox) { S.scene.remove(selBox); selBox = null; } if (o) { selBox = new THREE.BoxHelper(o, 0x4fb6ae); S.scene.add(selBox); } stToolbar(); }
 function placeSelBox() { if (selBox && S.sel) selBox.update(); }
-function rotateSel() { if (!S.sel) return; const it = S.sel.userData.item; it.rot = (it.rot + 90) % 360; S.sel.rotation.y = THREE.MathUtils.degToRad(it.rot); placeSelBox(); if (S.plan2d) renderPlan2D(); }
-function deleteSel() { if (!S.sel) return; const plan = S.sel.userData.plan, it = S.sel.userData.item; plan.items.splice(plan.items.indexOf(it), 1); S.sel.parent.remove(S.sel); selectItem(null); if (S.plan2d) renderPlan2D(); }
-function dupSel() { if (!S.sel) return; const plan = S.sel.userData.plan, it = S.sel.userData.item; const n = { ...it, o: { ...it.o }, x: it.x + .4, y: it.y + .4 }; plan.items.push(n); selectItem(addItem(plan, S.apts[plan.ap.k].furn, n)); if (S.plan2d) renderPlan2D(); }
+function rotateSel() { if (!S.sel) return; S.shadowDirty = true; const it = S.sel.userData.item; it.rot = (it.rot + 90) % 360; S.sel.rotation.y = THREE.MathUtils.degToRad(it.rot); placeSelBox(); if (S.plan2d) renderPlan2D(); }
+function deleteSel() { if (!S.sel) return; S.shadowDirty = true; const plan = S.sel.userData.plan, it = S.sel.userData.item; plan.items.splice(plan.items.indexOf(it), 1); S.sel.parent.remove(S.sel); selectItem(null); if (S.plan2d) renderPlan2D(); }
+function dupSel() { if (!S.sel) return; S.shadowDirty = true; const plan = S.sel.userData.plan, it = S.sel.userData.item; const n = { ...it, o: { ...it.o }, x: it.x + .4, y: it.y + .4 }; plan.items.push(n); selectItem(addItem(plan, S.apts[plan.ap.k].furn, n)); if (S.plan2d) renderPlan2D(); }
 function addCatalog(type) {
   const k = S.focus; if (!k) return; const plan = PLANS[k], r = plan.liveR; const it = { type, x: (r[0] + r[2]) / 2, y: (r[1] + r[3]) / 2, rot: 0, o: type === "bed" ? { w: 1.8 } : type === "rug" ? { w: 2.4, d: 1.7 } : {} };
-  plan.items.push(it); const o = addItem(plan, S.apts[k].furn, it); selectItem(o); if (S.plan2d) renderPlan2D();
+  S.shadowDirty = true; plan.items.push(it); const o = addItem(plan, S.apts[k].furn, it); selectItem(o); if (S.plan2d) renderPlan2D();
 }
 let hoverW = null;
 function hoverWall(e) { const w = pickWall(e); if (hoverW && hoverW !== w) hoverW.traverse(m => { if (m.isMesh && m.userData.wallPart) m.material = m.userData._m || m.material; }); hoverW = w; if (w) w.traverse(m => { if (m.isMesh && m.userData.wallPart) { m.userData._m = m.userData._m || m.material; m.material = M(0xe0675a, .7); } }); }
-function removeWall(g) { const w = g.userData.wall, plan = PLANS[S.focus]; if (plan.added.includes(w)) plan.added.splice(plan.added.indexOf(w), 1); else plan.removed.add(w); g.parent.remove(g); hoverW = null; if (S.plan2d) renderPlan2D(); Music.tick(); }
+function removeWall(g) { S.shadowDirty = true; const w = g.userData.wall, plan = PLANS[S.focus]; if (plan.added.includes(w)) plan.added.splice(plan.added.indexOf(w), 1); else plan.removed.add(w); g.parent.remove(g); hoverW = null; if (S.plan2d) renderPlan2D(); Music.tick(); }
 let wallPrev = null;
 function wallClick(p) {
   const b = PLANS[S.focus].box, x = clamp(snap(p.x, .1), b[0], b[2]), y = clamp(snap(p.z, .1), b[1], b[3]);
@@ -1558,7 +1610,7 @@ function wallClick(p) {
   const w = normWall(horiz ? { a: [x0, y0], b: [x, y0], t: .12 } : { a: [x0, y0], b: [x0, y], t: .12 });
   S.wallStart = null; if (wallPrev) { S.scene.remove(wallPrev); wallPrev = null; }
   if (w.len < .3) return;
-  PLANS[S.focus].added.push(w); S.apts[S.focus].walls.add(buildWall(w, S.mats.wall)); if (S.plan2d) renderPlan2D(); Music.tick();
+  S.shadowDirty = true; PLANS[S.focus].added.push(w); S.apts[S.focus].walls.add(buildWall(w, S.mats.wall)); if (S.plan2d) renderPlan2D(); Music.tick();
 }
 function previewWall(e) {
   const p = floorPoint(e); if (!p) return; const [x0, y0] = S.wallStart; const horiz = Math.abs(p.x - x0) >= Math.abs(p.z - y0);
@@ -1570,14 +1622,16 @@ function previewWall(e) {
 function resetPlan() {
   const k = S.focus; const fresh = aptPlan(PLANS[k].ap); PLANS[k] = fresh;
   const old = S.apts[k]; S.root.remove(old.g); S.pick = S.pick.filter(m => m.userData.plan !== old.plan);
-  const A = buildApt(fresh); S.apts[k] = A; S.root.add(A.g); A.walls.scale.y = S.inside ? 1 : CUT; selectItem(null); applyLayers(); if (S.plan2d) renderPlan2D();
+  const A = buildApt(fresh); S.apts[k] = A; S.root.add(A.g); A.walls.scale.y = A.bake.wallH.scale.y = S.inside ? 1 : CUT; selectItem(null); applyLayers(); if (S.plan2d) renderPlan2D();
 }
 
 /* ---------- layers ---------- */
 function applyLayers() {
   const L = S.layers, xray = L.water || L.sewer || L.elec;
   Object.entries(S.apts).forEach(([k, A]) => {
-    A.furn.visible = L.furn && !xray;
+    const editing = !!S.edit && k === S.focus;
+    if (A.bake) { A.bake.root.visible = !editing; A.bake.furn.visible = L.furn && !xray; A.bake.int.visible = L.walls; }
+    A.furn.visible = editing && L.furn && !xray; A.walls.visible = editing;
     A.walls.children.forEach(g => { const w = g.userData.wall; if (w && !w.ext) g.visible = L.walls; });
     if ((xray) && !A.mep && k === S.focus) buildMEP(A);
     if (A.mep) { A.mep.water.visible = L.water && k === S.focus; A.mep.sewer.visible = L.sewer && k === S.focus; A.mep.elec.visible = L.elec && k === S.focus; }
@@ -1586,7 +1640,7 @@ function applyLayers() {
   Object.values(S.apts).forEach(A => A.floors.children.forEach(f => { if (!f.userData._m) f.userData._m = f.material; f.material = xray ? S.mats.xfloor : f.userData._m; }));
   $$("#stLayers [data-l]").forEach(b => b.setAttribute("aria-pressed", String(!!L[b.dataset.l])));
   if ($("#stLegend")) $("#stLegend").hidden = !xray;
-  buildLabels(); if (S.plan2d) renderPlan2D();
+  S.shadowDirty = true; buildLabels(); if (S.plan2d) renderPlan2D();
 }
 
 /* ---------- 2D drawing (generated from the same model) ---------- */
@@ -1654,6 +1708,7 @@ function loop(now) {
   S.raf = requestAnimationFrame(loop);
   if (S.tween) S.tween.step(now); else if (!S.inside) S.controls.update();
   placeLabels(); if (selBox) selBox.update();
+  if (S.shadowDirty) { S.renderer.shadowMap.needsUpdate = true; S.shadowDirty = false; }
   S.renderer.render(S.scene, S.camera);
 }
 
@@ -1709,38 +1764,44 @@ function renderInsidePanel() {
   $("#fvOut").addEventListener("click", () => exitInside());
   $("#fvReq2").addEventListener("click", async () => { const id = st.u; await closeFloor(); fillUnitSelect(id); goTo("visit"); });
 }
-function renderPanel() { if (!fvState) return; fvPanel.classList.remove("in"); requestAnimationFrame(() => { if (!fvState) return; if (S.inside) renderInsidePanel(); else if (fvState.u) renderUnitPanel(); else renderFloorPanel(); fvTop(); stToolbar(); fvPanel.classList.add("in"); }); }
-function setEdit(mode) { S.edit = mode; S.wallStart = null; if (wallPrev) { S.scene.remove(wallPrev); wallPrev = null; } if (!mode) selectItem(null); if (mode && !S.layers.furn) { S.layers.furn = true; applyLayers(); } stToolbar(); $("#fvDesign") && ($("#fvDesign").textContent = mode ? t("st_done") : t("st_design")); }
+function renderPanel() { if (!fvState) return; if (S.inside) renderInsidePanel(); else if (fvState.u) renderUnitPanel(); else renderFloorPanel(); fvTop(); stToolbar(); fvPanel.classList.remove("in"); void fvPanel.offsetWidth; fvPanel.classList.add("in"); }
+function setEdit(mode) { const was = S.edit; S.edit = mode; S.wallStart = null; if (S.built && S.focus) { if (was && !mode) rebake(S.apts[S.focus]); applyLayers(); } if (wallPrev) { S.scene.remove(wallPrev); wallPrev = null; } if (!mode) selectItem(null); if (mode && !S.layers.furn) { S.layers.furn = true; applyLayers(); } stToolbar(); $("#fvDesign") && ($("#fvDesign").textContent = mode ? t("st_done") : t("st_design")); }
 
+let stageOff = false;
 async function openFloor(L) {
   if (L === "podium" || L === "roof") return openDrawer({ L });
   if (busy || fvState) return; busy = true;
   fvState = { L, u: null }; Object.assign(S, { focus: null, inside: false, plan2d: false, edit: null }); fv.classList.remove("p2d");
-  lenis?.stop(); document.body.classList.add("fv-open"); fv.setAttribute("aria-hidden", "false"); fv.classList.add("on", "loading");
-  renderPanel(); Music.whoosh(1);
+  lenis?.stop(); document.body.classList.add("fv-open"); fv.setAttribute("aria-hidden", "false");
+  renderPanel(); Music.whoosh(1); stLabels().innerHTML = ""; labelEls = [];
+  const ready = prewarm();
   const b = BANDS.find(b => b.L === L), r = b.el.getBoundingClientRect();
   stageEl.style.transformOrigin = `${r.left + r.width / 2}px ${r.top + r.height / 2}px`;
-  if (!REDUCE) stageAnim = stageEl.animate([{ transform: "scale(1)", filter: "blur(0px) brightness(1)" }, { transform: "scale(7)", filter: "blur(10px) brightness(1.3)" }], { duration: 1300, easing: EASE_IN, fill: "forwards" });
-  try { await loadThree(); if (!S.built) initStudio(); } catch (e) { console.error("studio", e); $("#stErr").hidden = false; }
+  if (!REDUCE) stageAnim = stageEl.animate([{ transform: "scale(1)", filter: "blur(0px) brightness(1)" }, { transform: "scale(6)", filter: "blur(6px) brightness(1.25)" }], { duration: 1200, easing: EASE_IN, fill: "forwards" });
+  fv.classList.add("on"); if (!S.built) fv.classList.add("loading");
+  requestAnimationFrame(() => requestAnimationFrame(() => fv.classList.add("shown")));
+  setTimeout(() => { if (fvState && fv.classList.contains("shown")) { stageEl.style.visibility = "hidden"; stageOff = true; } }, 1500);
+  try { await ready; } catch (e) { $("#stErr").hidden = false; }
   fv.classList.remove("loading");
   if (S.built) {
-    resizeStudio(); isolate(null); setWallScale(CUT); Object.values(S.apts).forEach(A => A.ceil.visible = false);
-    S.camera.fov = 34; S.camera.updateProjectionMatrix(); S.camera.position.set(17, .4, 11 + 70); S.controls.target.set(17, .2, 11); S.camera.lookAt(S.controls.target);
-    buildLabels(); if (!S.raf) S.raf = requestAnimationFrame(loop);
-    fv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCE ? 1 : 800, delay: REDUCE ? 0 : 500, easing: "ease-out", fill: "forwards" });
+    resizeStudio(); isolate(null); setWallScale(CUT); Object.values(S.apts).forEach(A => A.ceil.visible = false); if (S.pano) S.pano.visible = false;
+    S.camera.fov = 34; S.camera.updateProjectionMatrix(); S.camera.position.set(17, .4, 81); S.controls.target.set(17, .2, 11); S.camera.lookAt(S.controls.target);
+    if (!S.raf) S.raf = requestAnimationFrame(loop);
     const [p, tg] = FLOOR_VIEW(); await flyTo(p, tg, 2600, easeO, { arc: 4 });
-  } else fv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, fill: "forwards" });
+    buildLabels();
+  }
   busy = false; $("#fvClose").focus({ preventScroll: true });
 }
 async function closeFloor() {
   if (!fvState || busy) return; busy = true; fvPanel.classList.remove("in"); setEdit(null);
   if (S.inside) { S.inside = false; S.apts[S.focus].ceil.visible = false; if (S.pano) S.pano.visible = false; }
   if (S.plan2d) { S.plan2d = false; fv.classList.remove("p2d"); }
-  Music.whoosh(.8);
-  const fade = fv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: REDUCE ? 1 : 700, delay: REDUCE ? 0 : 500, easing: "ease-in", fill: "forwards" });
-  if (S.built) flyTo([17, .4, 11 + 70], [17, .2, 11], 1200, t => t * t * t);
-  if (stageAnim) { const back = stageEl.animate([{ transform: "scale(7)", filter: "blur(10px) brightness(1.3)" }, { transform: "scale(1)", filter: "blur(0px) brightness(1)" }], { duration: 1400, delay: 550, easing: EASE_OUT, fill: "forwards" }); stageAnim.cancel(); stageAnim = null; back.finished.then(() => back.cancel()); }
-  await fade.finished; fv.getAnimations().forEach(a => a.cancel());
+  Music.whoosh(.8); stLabels().innerHTML = ""; labelEls = [];
+  stageEl.style.visibility = ""; stageOff = false;
+  fv.classList.remove("shown");
+  if (S.built) flyTo([17, .4, 81], [17, .2, 11], 1200, t => t * t * t);
+  if (stageAnim) { const back = stageEl.animate([{ transform: "scale(6)", filter: "blur(6px) brightness(1.25)" }, { transform: "scale(1)", filter: "blur(0px) brightness(1)" }], { duration: 1300, delay: 450, easing: EASE_OUT, fill: "forwards" }); stageAnim.cancel(); stageAnim = null; back.finished.then(() => back.cancel()); }
+  await wait(REDUCE ? 50 : 1250);
   fv.classList.remove("on"); fv.setAttribute("aria-hidden", "true"); document.body.classList.remove("fv-open");
   fvState = null; S.focus = null; busy = false; lenis?.start();
 }
@@ -1852,6 +1913,7 @@ function enter(withSound) {
   Object.values(layers).forEach(L => { const p = L.v.play(); if (p && p.then) p.then(() => L.v.pause()).catch(() => {}); });
   if (window.Lenis && !REDUCE) { lenis = new Lenis({ lerp: .075, wheelMultiplier: .85, touchMultiplier: 1.4, smoothWheel: true }); }
   if (withSound) Music.start("score");
+  enteredAt = performance.now();
   scrollTo(0, 0);
 }
 $("#enterSound").addEventListener("click", () => enter(true));
@@ -1886,10 +1948,11 @@ function drawMist(amount, speed) {
 /* =========================================================
    MAIN LOOP — scrub films, pin copy, crossfades, explore
 ========================================================= */
-let lastY = scrollY, vel = 0, curChap = -1, lastScene = "clouds";
+let lastY = scrollY, vel = 0, curChap = -1, lastScene = "clouds", enteredAt = 0;
 const heroStill = $("#heroStill"), flash = $("#flash"), payEl = $("#payment"), visEl = $("#visit");
 function frame(now) {
   if (lenis) lenis.raf(now);
+  if (stageOff) { requestAnimationFrame(frame); return; }
   const vh = innerHeight, y = scrollY;
   vel += ((y - lastY) / vh - vel) * .2; lastY = y;
   const layerOp = {}, layerT = {}, layerFx = {};
@@ -1948,9 +2011,10 @@ function frame(now) {
   heroStill.style.opacity = (layerOp.lobby || 0) >= .999 ? 0 : (exploreEnter * (1 - (layerOp.lobby || 0))).toFixed(3);
   heroStill.style.visibility = +heroStill.style.opacity > 0 ? "visible" : "hidden";
   // explore mode
-  const ex = exploreV > .5 && !drawerState;
+  const ex = exploreV > .5 && !drawerState && !fvState;
   document.body.classList.toggle("explore", ex);
   // chapter
+  if (chap >= 2 && !warmP && enteredAt && now - enteredAt > 2500) prewarm();
   if (chap !== curChap) { curChap = chap; $$("#rail button").forEach((b, i) => b.classList.toggle("on", i === chap)); Music.setChapter(chap); }
   Music.setScroll(vel);
   Music.drawBars();
