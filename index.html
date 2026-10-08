@@ -1215,10 +1215,12 @@ function texRug(alt) { return canvasTex(512, (g, S) => { const c1 = alt ? "#5b5a
 /* ---------- realistic surface textures (weave, grain, veining, plaster, leaves, art) ---------- */
 function rawCanvas(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h || w; draw(c.getContext("2d"), w, h || w); return c; }
 let MAXANI = 8;
+function fileTex(n, srgb = true) { const t = new THREE.TextureLoader().load(`media/tex/${n}.jpg`, () => { S.shadowDirty = true; }); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = MAXANI; return t; }
 function texFrom(c, rep, srgb = true) { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = MAXANI; if (rep) t.repeat.set(rep, rep); return t; }
-function normalFrom(hc, k = 2) { const w = hc.width, h = hc.height, src = hc.getContext("2d").getImageData(0, 0, w, h).data, out = document.createElement("canvas"); out.width = w; out.height = h; const g = out.getContext("2d"), im = g.createImageData(w, h), d = im.data; const H = (x, y) => src[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
+function normalFrom(hc, k = 2) { return texFrom(normalCanvas(hc, k), 0, false); }
+function normalCanvas(hc, k = 2) { const w = hc.width, h = hc.height, src = hc.getContext("2d").getImageData(0, 0, w, h).data, out = document.createElement("canvas"); out.width = w; out.height = h; const g = out.getContext("2d"), im = g.createImageData(w, h), d = im.data; const H = (x, y) => src[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (H(x - 1, y) - H(x + 1, y)) * k, dy = (H(x, y - 1) - H(x, y + 1)) * k, l = Math.hypot(dx, dy, 1), i = (y * w + x) * 4; d[i] = (dx / l * .5 + .5) * 255; d[i + 1] = (dy / l * .5 + .5) * 255; d[i + 2] = (1 / l * .5 + .5) * 255; d[i + 3] = 255; }
-  g.putImageData(im, 0, 0); return texFrom(out, 0, false); }
+  g.putImageData(im, 0, 0); return out; }
 function weave(fine) { return rawCanvas(256, 256, (g, S) => { g.fillStyle = "#b8b8b8"; g.fillRect(0, 0, S, S); const n = fine ? 64 : 40, st = S / n;
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const over = (i + j) % 2; const v = 150 + rnd() * 70 | 0; g.fillStyle = `rgb(${v},${v},${v})`; if (over) g.fillRect(i * st + .4, j * st, st - .8, st); else g.fillRect(i * st, j * st + .4, st, st - .8); }
   for (let k = 0; k < 900; k++) { const v = rnd() < .5 ? 90 : 235; g.strokeStyle = `rgba(${v},${v},${v},${.08 + rnd() * .12})`; g.lineWidth = .6; const x = rnd() * S, y = rnd() * S, a = rnd() * 6.28, L = 2 + rnd() * 7; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); } }); }
@@ -1279,7 +1281,7 @@ function makeMats() {
   const oak = texOak(), tile = texTile("#e3d8c6", "rgba(120,105,85,.55)", 4), stone = texTile("#d6cdbf", "rgba(110,98,84,.5)", 3), trav = texTile("#d9ccb5", "rgba(130,112,90,.45)", 2), deck = texDeck(), conc = texTile("#bdb6ab", "rgba(90,85,78,.25)", 2);
   const cap = M(0x23282e, .9);
   const plC = plasterC(), plN = normalFrom(plC, 1.2), plM = texFrom(plC); plN.repeat.set(1, 1);
-  const boisMap = texFrom(boiserieC(false)), boisN = normalFrom(boiserieC(true), 3.5);
+  const boisMap = fileTex("bois"), boisN = fileTex("boisN", false);
   const wallSide = M(0xffffff, .82, 0, { map: boisMap, normalMap: boisN, normalScale: new THREE.Vector2(.6, .6), envMapIntensity: .45 }), extSide = M(0xe6dccb, .85, 0, { normalMap: plN, normalScale: new THREE.Vector2(.4, .4) });
   wallSide.userData.uvS = 1.4; extSide.userData.uvS = 1.4;
   const wv = weave(false), wvF = weave(true), wvN = normalFrom(wv, 3), wvFN = normalFrom(wvF, 2.4), wvM = texFrom(slub(wv)), wvFM = texFrom(slub(wvF));
@@ -1289,7 +1291,7 @@ function makeMats() {
   const leafM = k => { const tx = texFrom(leafC(k)); const m = new THREE.MeshStandardMaterial({ map: tx, alphaTest: .5, side: THREE.DoubleSide, roughness: .55, envMapIntensity: .5 }); m.userData.keepUV = 1; m.userData.depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tx, alphaTest: .5 }); return m; };
   S.mats = {
     wall: [wallSide, wallSide, cap, wallSide, wallSide, wallSide], ext: [extSide, extSide, cap, extSide, extSide, extSide],
-    oak: (() => { const c = chevronC(); return M(0xffffff, .5, 0, { map: texFrom(c), normalMap: normalFrom(c, 1.2), normalScale: new THREE.Vector2(.22, .22), envMapIntensity: .6 }); })(), tile: M(0xffffff, .3, 0, { map: texFrom(stoneC("#cdb89a", "rgba(110,86,62,A)", "rgba(170,128,70,A)", 4, 2, 1)), envMapIntensity: .75 }), stone: M(0xffffff, .3, 0, { map: texFrom(stoneC("#e2d5c1", "rgba(120,100,80,A)", null, 2, 2, 0)), envMapIntensity: .7 }), wetWall: M(0xffffff, .22, 0, { map: texFrom(stoneC("#e6d6bf", "rgba(120,92,64,A)", "rgba(176,130,66,A)", 2, 1, 1)), envMapIntensity: .85 }), cornice: M(0xf7f2e9, .55), trav: M(0xffffff, .5, 0, { map: trav }), deck: M(0xffffff, .7, 0, { map: deck }), conc: M(0xffffff, .9, 0, { map: conc }), dark: M(0x15191e, .9),
+    oak: M(0xffffff, .5, 0, { map: fileTex("chev"), normalMap: fileTex("chevN", false), normalScale: new THREE.Vector2(.22, .22), envMapIntensity: .6 }), tile: M(0xffffff, .3, 0, { map: fileTex("stoneTile"), envMapIntensity: .75 }), stone: M(0xffffff, .3, 0, { map: fileTex("stoneKit"), envMapIntensity: .7 }), wetWall: M(0xffffff, .22, 0, { map: fileTex("stoneWet"), envMapIntensity: .85 }), cornice: M(0xf7f2e9, .55), trav: M(0xffffff, .5, 0, { map: trav }), deck: M(0xffffff, .7, 0, { map: deck }), conc: M(0xffffff, .9, 0, { map: conc }), dark: M(0x15191e, .9),
     slab: M(0xd9cfbf, .85), slabEdge: M(0x4fb6ae, .5), ceil: new THREE.MeshStandardMaterial({ color: 0xf6f2ea, roughness: .95, side: THREE.BackSide }),
     glass: (() => { const g2 = new THREE.MeshPhysicalMaterial({ color: 0xd8ecf2, roughness: .04, metalness: 0, transparent: true, opacity: .12, envMapIntensity: 1.6, depthWrite: false }); g2.userData.ro = 6; return g2; })(),
     frame: M(0x3b352f, .45, .6), steel: M(0xb9bcc0, .3, .9), walnut: wood(0xffffff, wal, .48), walnutD: wood(0x8f8076, wal, .55), oakL: wood(0xffffff, oakL, .55), lacquer: M(0xe8e1d6, .38), marble: (() => { const m = M(0xffffff, .16, 0, { map: mar, envMapIntensity: .9 }); m.userData.uvS = 1.2; return m; })(),
@@ -2123,7 +2125,7 @@ function navAct(k) {
 $$("#stNav [data-nav]").forEach(b => b.addEventListener("click", () => navAct(b.dataset.nav)));
 
 /* ---------- dev hook: equirectangular capture of the model from an eye point (used to author photoreal 360° views) ---------- */
-if (/[?&]dev\b/.test(location.search)) window.__bz = { S, PLANS, isolate, setWallScale, interiorLights, focus: k => { S.focus = k; isolate(k); },
+if (/[?&]dev\b/.test(location.search)) window.__bz = { texDump: () => { const j = c => c.toDataURL("image/jpeg", .9), ch = chevronC(), bh = boiserieC(true); return { chev: j(ch), chevN: j(normalCanvas(ch, 1.2)), bois: j(boiserieC(false)), boisN: j(normalCanvas(bh, 3.5)), stoneTile: j(stoneC("#cdb89a", "rgba(110,86,62,A)", "rgba(170,128,70,A)", 4, 2, 1)), stoneKit: j(stoneC("#e2d5c1", "rgba(120,100,80,A)", null, 2, 2, 0)), stoneWet: j(stoneC("#e6d6bf", "rgba(120,92,64,A)", "rgba(176,130,66,A)", 2, 1, 1)) }; }, S, PLANS, isolate, setWallScale, interiorLights, focus: k => { S.focus = k; isolate(k); },
   async pano(k, x, z, y = 1.5, size = 2048, yaw = 0) {
     const R = S.renderer; isolate(k); S.core.g.visible = true; setWallScale(1); S.apts[k].ceil.visible = true; interiorLights(k, true); if (S.pano) S.pano.visible = true; applyLayers(); R.shadowMap.needsUpdate = true;
     const rt = new THREE.WebGLCubeRenderTarget(1024, { encoding: THREE.sRGBEncoding, generateMipmaps: false }); const cc = new THREE.CubeCamera(.05, 300, rt); cc.position.set(x, y, z); S.scene.add(cc); cc.update(R, S.scene);
@@ -2296,6 +2298,7 @@ $("#lead").addEventListener("submit", e => {
    SECTIONS, RAIL, NAV
 ========================================================= */
 const sections = $$(".sc").map((el, i) => ({ el, i, id: el.id, scene: el.dataset.scene, fx: el.dataset.fx, mode: el.dataset.mode, chap: el.dataset.chap, lines: $$(".ln", el) }));
+const WARM_AT = Math.max(0, sections.findIndex(s => s.id === "explore") - 1);
 const chapters = [...sections.map(s => ({ id: s.id, key: s.chap })), { id: "payment", key: "ch_pay" }, { id: "visit", key: "ch_visit" }];
 function buildRail() {
   const rail = $("#rail");
@@ -2314,6 +2317,8 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-go]"
    MEDIA LOADING (blob for frame-accurate scrubbing)
 ========================================================= */
 const MEDIA = { clouds: 5399756, master: 7207317, city: 8244914, build: 10525915, hero: 5016560, lobby: 4276688, living: 5436248, pool: 5549344, cut: 5642162, park: 3240531, ramp: 2763057, plant: 5409915, elec: 4324244, mep: 3261958 };
+const LITE = matchMedia("(pointer: coarse)").matches || innerWidth < 900;
+if (LITE) Object.assign(MEDIA, {master: 1996236, pool: 1622167, city: 2333865, ramp: 988850, park: 1200206, lobby: 1208515, hero: 1524783, living: 1483830, build: 4085978, mep: 1202264, clouds: 1544861, plant: 2038278, cut: 1875713, elec: 1614431});
 const layers = {};
 $$("video.layer").forEach(v => { const k = v.dataset.k; layers[k] = { k, v, cur: 0, dur: 5.04, ready: false, op: k === "clouds" ? 1 : 0 }; v.addEventListener("loadedmetadata", () => { layers[k].dur = v.duration || 5.04; }); });
 const total = Object.values(MEDIA).reduce((a, b) => a + b, 0);
@@ -2324,7 +2329,7 @@ function progress() {
   if (!enterReady && (layers.clouds.ready && layers.master.ready || p > .985)) { enterReady = true; $("#ldGo").hidden = false; }
 }
 async function loadOne(k) {
-  const url = `media/${k}.mp4`;
+  const url = LITE ? `media/m/${k}.mp4` : `media/${k}.mp4`;
   try {
     const res = await fetch(url); if (!res.ok || !res.body) throw new Error(res.status);
     const reader = res.body.getReader(); const chunks = []; let n = 0;
@@ -2454,7 +2459,7 @@ function frame(now) {
   const ex = exploreV > .5 && !drawerState && !fvState;
   document.body.classList.toggle("explore", ex);
   // chapter
-  if (chap >= 2 && !warmP && enteredAt && now - enteredAt > 2500) prewarm();
+  if (!warmP && enteredAt && now - enteredAt > 2500 && chap >= WARM_AT) (window.requestIdleCallback || setTimeout)(() => prewarm(), { timeout: 1500 });
   if (chap !== curChap) { curChap = chap; $$("#rail button").forEach((b, i) => b.classList.toggle("on", i === chap)); Music.setChapter(chap); }
   Music.setScroll(vel);
   Music.drawBars();
