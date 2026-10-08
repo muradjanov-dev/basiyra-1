@@ -1214,7 +1214,8 @@ function texRug(alt) { return canvasTex(512, (g, S) => { const c1 = alt ? "#5b5a
 
 /* ---------- realistic surface textures (weave, grain, veining, plaster, leaves, art) ---------- */
 function rawCanvas(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h || w; draw(c.getContext("2d"), w, h || w); return c; }
-function texFrom(c, rep, srgb = true) { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; if (rep) t.repeat.set(rep, rep); return t; }
+let MAXANI = 8;
+function texFrom(c, rep, srgb = true) { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = MAXANI; if (rep) t.repeat.set(rep, rep); return t; }
 function normalFrom(hc, k = 2) { const w = hc.width, h = hc.height, src = hc.getContext("2d").getImageData(0, 0, w, h).data, out = document.createElement("canvas"); out.width = w; out.height = h; const g = out.getContext("2d"), im = g.createImageData(w, h), d = im.data; const H = (x, y) => src[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (H(x - 1, y) - H(x + 1, y)) * k, dy = (H(x, y - 1) - H(x, y + 1)) * k, l = Math.hypot(dx, dy, 1), i = (y * w + x) * 4; d[i] = (dx / l * .5 + .5) * 255; d[i + 1] = (dy / l * .5 + .5) * 255; d[i + 2] = (1 / l * .5 + .5) * 255; d[i + 3] = 255; }
   g.putImageData(im, 0, 0); return texFrom(out, 0, false); }
@@ -1240,12 +1241,21 @@ function leafC(kind) { return rawCanvas(128, 256, (g, W, H) => {
   g.strokeStyle = "rgba(210,225,160,.55)"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(W / 2, H); g.lineTo(W / 2, 6); g.stroke();
   g.lineWidth = 1; g.strokeStyle = "rgba(200,220,150,.32)"; for (let y = H * .85; y > H * .1; y -= 15) { [-1, 1].forEach(sd => { g.beginPath(); g.moveTo(W / 2, y); g.quadraticCurveTo(W / 2 + sd * W * .2, y - 12, W / 2 + sd * W * .38, y - 30); g.stroke(); }); }
   g.globalCompositeOperation = "source-atop"; for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "0,20,0" : "220,240,180"},${rnd() * .07})`; g.fillRect(rnd() * W, rnd() * H, 3, 3); } g.globalCompositeOperation = "source-over"; }); }
-function chevronC() { return rawCanvas(1024, 1024, (g, S2) => { const W = 128, step = 40;
+function chevronC() { return rawCanvas(2048, 2048, (g, S2) => { const W = 256, step = 80;
   for (let c = 0; c < S2 / W + 1; c++) { const x0 = c * W, sg = c % 2 ? -1 : 1;
     for (let y = -W * 2; y < S2 + W * 2; y += step) { const b = 132 + rnd() * 46 | 0, gg = b - 40 - rnd() * 10 | 0, bb = b - 82 - rnd() * 10 | 0; g.fillStyle = `rgb(${b},${gg},${bb})`; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + W, y + sg * W); g.lineTo(x0 + W, y + sg * W + step); g.lineTo(x0, y + step); g.closePath(); g.fill();
       g.save(); g.clip(); for (let k = 0; k < 9; k++) { g.strokeStyle = `rgba(70,38,16,${.05 + rnd() * .12})`; g.lineWidth = .6 + rnd() * 1.6; const o = rnd() * step; g.beginPath(); g.moveTo(x0, y + o); g.bezierCurveTo(x0 + W * .33, y + o + sg * W * .33 + (rnd() - .5) * 4, x0 + W * .66, y + o + sg * W * .66 + (rnd() - .5) * 4, x0 + W, y + o + sg * W); g.stroke(); } g.restore();
-      g.strokeStyle = "rgba(40,20,8,.55)"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + W, y + sg * W); g.stroke(); }
-    g.fillStyle = "rgba(40,20,8,.5)"; g.fillRect(x0 - .7, 0, 1.4, S2); } }); }
+      g.strokeStyle = "rgba(40,20,8,.5)"; g.lineWidth = 2.6; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + W, y + sg * W); g.stroke(); }
+    g.fillStyle = "rgba(40,20,8,.45)"; g.fillRect(x0 - 1.3, 0, 2.6, S2); } g.filter = "blur(.8px)"; g.drawImage(g.canvas, 0, 0); g.filter = "none"; }); }
+function stoneC(base, vein, gold, nx, ny, bold) { return rawCanvas(2048, 2048, (g, S2) => {
+  g.fillStyle = base; g.fillRect(0, 0, S2, S2);
+  for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,250,240" : "120,100,80"},${rnd() * .05})`; g.beginPath(); g.arc(rnd() * S2, rnd() * S2, 4 + rnd() * 40, 0, 7); g.fill(); }
+  const vein2 = (w, col, a) => { let x = rnd() * S2, y = -20, ang = .9 + rnd() * .5; g.lineWidth = w; g.strokeStyle = col.replace("A", a); g.beginPath(); g.moveTo(x, y); while (y < S2 + 20 && x > -60 && x < S2 + 60) { ang += (rnd() - .5) * .35; x += Math.cos(ang) * 14; y += Math.abs(Math.sin(ang)) * 14 + 4; g.lineTo(x, y); } g.stroke(); };
+  g.filter = "blur(5px)"; for (let i = 0; i < (bold ? 5 : 3); i++) vein2(14 + rnd() * 22, vein, (.18 + rnd() * .14).toFixed(2));
+  g.filter = "blur(1.4px)"; for (let i = 0; i < (bold ? 9 : 6); i++) vein2(2 + rnd() * 4, vein, (.35 + rnd() * .3).toFixed(2));
+  if (gold) { g.filter = "blur(.7px)"; for (let i = 0; i < 6; i++) vein2(1.2 + rnd() * 2, gold, (.5 + rnd() * .35).toFixed(2)); }
+  g.filter = "blur(.6px)"; for (let i = 0; i < 18; i++) vein2(.8 + rnd() * 1.2, vein, (.2 + rnd() * .25).toFixed(2)); g.filter = "none";
+  g.strokeStyle = "rgba(95,85,72,.55)"; g.lineWidth = 3; for (let i = 0; i <= nx; i++) { g.beginPath(); g.moveTo(i * S2 / nx, 0); g.lineTo(i * S2 / nx, S2); g.stroke(); } for (let j = 0; j <= ny; j++) { g.beginPath(); g.moveTo(0, j * S2 / ny); g.lineTo(S2, j * S2 / ny); g.stroke(); } }); }
 function slabMarbleC(nx, ny, warm) { return rawCanvas(1024, 1024, (g, S2) => { g.drawImage(marbleC(), 0, 0, S2, S2); if (warm) { g.fillStyle = "rgba(225,205,175,.12)"; g.fillRect(0, 0, S2, S2); } g.strokeStyle = "rgba(150,140,128,.7)"; g.lineWidth = 2; for (let i = 0; i <= nx; i++) { g.beginPath(); g.moveTo(i * S2 / nx, 0); g.lineTo(i * S2 / nx, S2); g.stroke(); } for (let j = 0; j <= ny; j++) { g.beginPath(); g.moveTo(0, j * S2 / ny); g.lineTo(S2, j * S2 / ny); g.stroke(); } }); }
 function boiserieC(height) { // 1.2 m × 2.9 m wall module: dado + upper panel mouldings (height map when height=true)
   return rawCanvas(512, 1236, (g, W, H) => { const m = H / 2.9, Y = v => H - v * m, X = u => u * m;
@@ -1270,7 +1280,7 @@ function makeMats() {
   const cap = M(0x23282e, .9);
   const plC = plasterC(), plN = normalFrom(plC, 1.2), plM = texFrom(plC); plN.repeat.set(1, 1);
   const boisMap = texFrom(boiserieC(false)), boisN = normalFrom(boiserieC(true), 3.5);
-  const wallSide = M(0xffffff, .82, 0, { map: boisMap, normalMap: boisN, normalScale: new THREE.Vector2(.9, .9), envMapIntensity: .45 }), extSide = M(0xe6dccb, .85, 0, { normalMap: plN, normalScale: new THREE.Vector2(.4, .4) });
+  const wallSide = M(0xffffff, .82, 0, { map: boisMap, normalMap: boisN, normalScale: new THREE.Vector2(.6, .6), envMapIntensity: .45 }), extSide = M(0xe6dccb, .85, 0, { normalMap: plN, normalScale: new THREE.Vector2(.4, .4) });
   wallSide.userData.uvS = 1.4; extSide.userData.uvS = 1.4;
   const wv = weave(false), wvF = weave(true), wvN = normalFrom(wv, 3), wvFN = normalFrom(wvF, 2.4), wvM = texFrom(slub(wv)), wvFM = texFrom(slub(wvF));
   const fab = (c, map, nrm, s, ns = .9) => { const m = M(c, .96, 0, { map, normalMap: nrm, normalScale: new THREE.Vector2(ns, ns), envMapIntensity: .35 }); m.userData.uvS = s; return m; };
@@ -1279,13 +1289,13 @@ function makeMats() {
   const leafM = k => { const tx = texFrom(leafC(k)); const m = new THREE.MeshStandardMaterial({ map: tx, alphaTest: .5, side: THREE.DoubleSide, roughness: .55, envMapIntensity: .5 }); m.userData.keepUV = 1; m.userData.depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tx, alphaTest: .5 }); return m; };
   S.mats = {
     wall: [wallSide, wallSide, cap, wallSide, wallSide, wallSide], ext: [extSide, extSide, cap, extSide, extSide, extSide],
-    oak: (() => { const c = chevronC(); return M(0xffffff, .42, 0, { map: texFrom(c), normalMap: normalFrom(c, 1.6), normalScale: new THREE.Vector2(.35, .35), envMapIntensity: .7 }); })(), tile: M(0xffffff, .16, 0, { map: texFrom(slabMarbleC(2, 2)), envMapIntensity: 1 }), stone: M(0xffffff, .2, 0, { map: texFrom(slabMarbleC(2, 2, 1)), envMapIntensity: .9 }), wetWall: (() => { const m2 = M(0xffffff, .14, 0, { map: texFrom(slabMarbleC(2, 2)), envMapIntensity: 1 }); return m2; })(), cornice: M(0xf7f2e9, .55), trav: M(0xffffff, .5, 0, { map: trav }), deck: M(0xffffff, .7, 0, { map: deck }), conc: M(0xffffff, .9, 0, { map: conc }), dark: M(0x15191e, .9),
+    oak: (() => { const c = chevronC(); return M(0xffffff, .5, 0, { map: texFrom(c), normalMap: normalFrom(c, 1.2), normalScale: new THREE.Vector2(.22, .22), envMapIntensity: .6 }); })(), tile: M(0xffffff, .3, 0, { map: texFrom(stoneC("#cdb89a", "rgba(110,86,62,A)", "rgba(170,128,70,A)", 4, 2, 1)), envMapIntensity: .75 }), stone: M(0xffffff, .3, 0, { map: texFrom(stoneC("#e2d5c1", "rgba(120,100,80,A)", null, 2, 2, 0)), envMapIntensity: .7 }), wetWall: M(0xffffff, .22, 0, { map: texFrom(stoneC("#e6d6bf", "rgba(120,92,64,A)", "rgba(176,130,66,A)", 2, 1, 1)), envMapIntensity: .85 }), cornice: M(0xf7f2e9, .55), trav: M(0xffffff, .5, 0, { map: trav }), deck: M(0xffffff, .7, 0, { map: deck }), conc: M(0xffffff, .9, 0, { map: conc }), dark: M(0x15191e, .9),
     slab: M(0xd9cfbf, .85), slabEdge: M(0x4fb6ae, .5), ceil: new THREE.MeshStandardMaterial({ color: 0xf6f2ea, roughness: .95, side: THREE.BackSide }),
-    glass: new THREE.MeshPhysicalMaterial({ color: 0xd8ecf2, roughness: .04, metalness: 0, transparent: true, opacity: .12, envMapIntensity: 1.6, depthWrite: false }),
+    glass: (() => { const g2 = new THREE.MeshPhysicalMaterial({ color: 0xd8ecf2, roughness: .04, metalness: 0, transparent: true, opacity: .12, envMapIntensity: 1.6, depthWrite: false }); g2.userData.ro = 6; return g2; })(),
     frame: M(0x3b352f, .45, .6), steel: M(0xb9bcc0, .3, .9), walnut: wood(0xffffff, wal, .48), walnutD: wood(0x8f8076, wal, .55), oakL: wood(0xffffff, oakL, .55), lacquer: M(0xe8e1d6, .38), marble: (() => { const m = M(0xffffff, .16, 0, { map: mar, envMapIntensity: .9 }); m.userData.uvS = 1.2; return m; })(),
     fabric: fab(0xe9e1d4, wvM, wvN, .32), fabric2: fab(0xc4ae92, wvM, wvN, .26, 1.1), linen: fab(0xf6f1e8, wvFM, wvFN, .5, .6), boucle: fab(0x8f8578, wvM, wvN, .18, 1.6), white: M(0xffffff, .5), porcelain: M(0xfbfbf9, .12), black: M(0x121417, .25, .2),
     turq: fab(0x3f8f8a, wvM, wvN, .22, 1.2), terra: fab(0xb06a4c, wvM, wvN, .22, 1.2), leaf: leafM(0), leafB: leafM(1), leafR: leafM(2), stem: M(0x4a3b2a, .8), soil: M(0x2c2119, 1),
-    curtain: new THREE.MeshStandardMaterial({ color: 0xf6f1e6, roughness: 1, transparent: true, opacity: .72, side: THREE.DoubleSide, envMapIntensity: .3 }), skirt: M(0xf4f0e9, .4), rod: M(0x2b2b2b, .4, .7), art: ART.map(f => M(0xffffff, .85, 0, { map: texFrom(rawCanvas(512, 340, f)) })),
+    curtain: (() => { const c2 = new THREE.MeshStandardMaterial({ color: 0xf6f1e6, roughness: 1, transparent: true, opacity: .72, side: THREE.DoubleSide, envMapIntensity: .3, depthWrite: true }); c2.userData.ro = 4; return c2; })(), skirt: M(0xf4f0e9, .4), rod: M(0x2b2b2b, .4, .7), art: ART.map(f => M(0xffffff, .85, 0, { map: texFrom(rawCanvas(512, 340, f)) })),
     selFill: null, selLine: null, selFin: null, brass: M(0xb89252, .35, .8), leaf2: M(0x6d8a45, .85), pot: M(0xb9a690, .8), potT: M(0xa86a4a, .85), screen: M(0x0b0d10, .15, .3),
     rugA: M(0xffffff, .98, 0, { map: texRug(0) }), rugB: M(0xffffff, .98, 0, { map: texRug(1) }), water: M(0xdfeef2, .05, 0, { transparent: true, opacity: .7 }),
     pCold: M(0x3d8cff, .35, .2, { emissive: 0x1f5fd0, emissiveIntensity: 1.1 }), pHot: M(0xff5a46, .35, .2, { emissive: 0xc0281a, emissiveIntensity: 1.1 }), pSew: M(0xb8c0c8, .45, .2, { emissive: 0x5a6068, emissiveIntensity: .7 }), pElec: M(0xffd23f, .4, .1, { emissive: 0xd9a800, emissiveIntensity: 1.2 }), xfloor: M(0x1a2129, .9), socket: M(0xffffff, .3), lightOn: new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe2a8, emissiveIntensity: 2.2 }),
@@ -1378,9 +1388,9 @@ function furn(type, o = {}) {
       break;
     }
     case "console": g.add(at(rbox(w, .04, d, .01, m.marble), 0, .8, 0)); [-1, 1].forEach(s => g.add(at(rbox(.04, .78, d - .04, .01, m.brass), s * (w / 2 - .04), .39, 0))); g.add(at(rbox(.8, 1.0, .03, .01, m.steel), 0, 1.5, -d / 2 + .02)); break;
-    case "tub": { const shell = at(rbox(w, .58, d, .28, m.porcelain), 0, .29, 0); g.add(shell); g.add(at(rbox(w - .14, .02, d - .14, .2, m.water), 0, .5, 0)); g.add(at(cyl(.015, .015, .9, m.steel, 8), w / 2 - .12, .45, -d / 2 - .05)); break; }
-    case "wc": g.add(at(rbox(.37, .36, .55, .16, m.porcelain), 0, .4, .02)); g.add(at(rbox(.4, .5, .12, .02, m.porcelain), 0, .85, -d / 2 + .06)); g.add(at(new THREE.Mesh(new THREE.BoxGeometry(.2, .01, .12), m.steel), 0, 1.1, -d / 2 + .13)); break;
-    case "vanity": { g.add(at(rbox(w, .45, .5, .01, m.walnut), 0, .62, 0)); g.add(at(rbox(w + .02, .04, .52, .01, m.marble), 0, .86, 0)); const nb = w > 1.1 ? 2 : 1; for (let i = 0; i < nb; i++) { const x = nb === 1 ? 0 : (i ? .3 : -.3); g.add(at(rbox(.42, .12, .34, .05, m.porcelain), x, .94, .03)); g.add(at(cyl(.012, .012, .22, m.brass, 8), x, 1.0, -.18)); } g.add(at(rbox(w, .85, .03, .01, m.steel), 0, 1.6, -d / 2 + .02)); break; }
+    case "tub": { const shell = at(rbox(w, .58, d, .1, m.porcelain), 0, .29, 0); g.add(shell); g.add(at(rbox(w - .14, .02, d - .14, .2, m.water), 0, .5, 0)); g.add(at(cyl(.015, .015, .9, m.steel, 8), w / 2 - .12, .45, -d / 2 - .05)); break; }
+    case "wc": g.add(at(rbox(.36, .3, .52, .07, m.porcelain), 0, .42, .03)); g.add(at(rbox(.34, .03, .48, .015, m.porcelain), 0, .585, .03)); g.add(at(rbox(.42, .55, .05, .01, m.marble), 0, .9, -d / 2 + .03)); g.add(at(new THREE.Mesh(new THREE.BoxGeometry(.2, .01, .12), m.steel), 0, 1.1, -d / 2 + .13)); break;
+    case "vanity": { g.add(at(rbox(w, .45, .5, .01, m.walnut), 0, .62, 0)); g.add(at(rbox(w + .02, .04, .52, .01, m.marble), 0, .86, 0)); const nb = w > 1.1 ? 2 : 1; for (let i = 0; i < nb; i++) { const x = nb === 1 ? 0 : (i ? .3 : -.3); g.add(at(rbox(.46, .09, .36, .025, m.porcelain), x, .925, .03)); g.add(at(new THREE.Mesh(new THREE.BoxGeometry(.38, .005, .28), m.steel), x, .972, .03)); g.add(at(cyl(.012, .012, .22, m.brass, 8), x, 1.0, -.18)); } g.add(at(rbox(w, .85, .03, .01, m.steel), 0, 1.6, -d / 2 + .02)); break; }
     case "riser": { const ww = o.w || .5, dd = o.d || .5; g.add(at(rbox(ww, WALL_H, dd, .01, m.lacquer), 0, WALL_H / 2, 0)); g.userData.fixed = true; break; }
     case "bed": case "bed1": {
       const W = type === "bed1" ? (o.w || .95) : (o.w || 1.8), D = 2.1;
@@ -1488,13 +1498,16 @@ function dressApt(plan, walls) {
   // marble cladding on every wall face that bounds a wet room (bath, en-suite)
   const wallsAll = [...all, ...CORE_WALLS.map(normWall)];
   plan.rooms.filter(r => r.f === "tile").forEach(r => r.rs.forEach(q => wallsAll.forEach(w => {
-    let sd, lo, hi; if (w.horiz) { if (Math.abs(w.a[1] - q[1]) < .01) sd = 1; else if (Math.abs(w.a[1] - q[3]) < .01) sd = -1; else return; lo = Math.max(q[0], w.a[0]); hi = Math.min(q[2], w.a[0] + w.len); }
-    else { if (Math.abs(w.a[0] - q[0]) < .01) sd = 1; else if (Math.abs(w.a[0] - q[2]) < .01) sd = -1; else return; lo = Math.max(q[1], w.a[1]); hi = Math.min(q[3], w.a[1] + w.len); }
+    let sd, lo, hi; if (w.horiz) { if (Math.abs(w.a[1] - q[1]) < .2) sd = 1; else if (Math.abs(w.a[1] - q[3]) < .2) sd = -1; else return; lo = Math.max(q[0], w.a[0]); hi = Math.min(q[2], w.a[0] + w.len); }
+    else { if (Math.abs(w.a[0] - q[0]) < .2) sd = 1; else if (Math.abs(w.a[0] - q[2]) < .2) sd = -1; else return; lo = Math.max(q[1], w.a[1]); hi = Math.min(q[3], w.a[1] + w.len); }
     if (hi - lo < .05) return; const base = w.horiz ? w.a[0] : w.a[1];
     solidParts(w, true).forEach(([s0, e0]) => { const a0 = Math.max(lo, base + s0), a1 = Math.min(hi, base + e0); if (a1 - a0 < .04) return; const L = a1 - a0, off = w.t / 2 + .006;
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(L, 2.72), m.wetWall); const uvA = pl.geometry.attributes.uv; for (let i = 0; i < uvA.count; i++) uvA.setXY(i, (a0 + uvA.getX(i) * L) / 2.4, uvA.getY(i) * 2.72 / 2.4);
       if (w.horiz) { pl.position.set(a0 + L / 2, .09 + 1.36, w.a[1] + sd * off); pl.rotation.y = sd > 0 ? 0 : Math.PI; } else { pl.position.set(w.a[0] + sd * off, .09 + 1.36, a0 + L / 2); pl.rotation.y = sd > 0 ? Math.PI / 2 : -Math.PI / 2; }
       pl.receiveShadow = true; walls.add(pl); });
+    (w.ops || []).filter(o => o.kind === "window").forEach(o => { const a0 = Math.max(lo, base + o.at), a1 = Math.min(hi, base + o.at + o.w); if (a1 - a0 < .04) return; const L = a1 - a0, off = w.t / 2 + .006, sill = o.sill ?? .45, head = o.head ?? 2.55;
+      [[.09, sill], [head, 2.81]].forEach(([y0, y1]) => { if (y1 - y0 < .03) return; const pl = new THREE.Mesh(new THREE.PlaneGeometry(L, y1 - y0), m.wetWall); const uvA = pl.geometry.attributes.uv; for (let i = 0; i < uvA.count; i++) uvA.setXY(i, (a0 + uvA.getX(i) * L) / 2.4, (y0 + uvA.getY(i) * (y1 - y0)) / 2.4);
+        if (w.horiz) { pl.position.set(a0 + L / 2, (y0 + y1) / 2, w.a[1] + sd * off); pl.rotation.y = sd > 0 ? 0 : Math.PI; } else { pl.position.set(w.a[0] + sd * off, (y0 + y1) / 2, a0 + L / 2); pl.rotation.y = sd > 0 ? Math.PI / 2 : -Math.PI / 2; } walls.add(pl); }); });
   })));
   // framed art above sofas and beds (ray to the wall behind)
   const allW = [...all, ...CORE_WALLS.map(normWall)]; let ai = plan.ap.mx * 2 + plan.ap.my;
@@ -1553,7 +1566,7 @@ function bakeInto(src, filter) {
   const out = new THREE.Group();
   buckets.forEach((geos, mat) => {
     const mg = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false); geos.forEach(x => x.dispose()); if (!mg) return;
-    const mesh = new THREE.Mesh(mg, mat); mesh.castShadow = !mat.transparent && mat !== S.mats.blob; mesh.receiveShadow = !mat.userData.noRecv; if (mat.userData.depth) mesh.customDepthMaterial = mat.userData.depth; out.add(mesh);
+    const mesh = new THREE.Mesh(mg, mat); mesh.castShadow = !mat.transparent && mat !== S.mats.blob; mesh.receiveShadow = !mat.userData.noRecv; if (mat.userData.depth) mesh.customDepthMaterial = mat.userData.depth; if (mat.userData.ro) mesh.renderOrder = mat.userData.ro; out.add(mesh);
   });
   return out;
 }
@@ -1652,7 +1665,7 @@ function initRenderer() {
   scene.add(sun, sun.target);
   for (let i = 0; i < 3; i++) { const L = new THREE.PointLight(0xffd7a3, 0, 7.5, 2); scene.add(L); WALK.lights.push(L); }
   const root = new THREE.Group(); scene.add(root);
-  makeMats();
+  MAXANI = Math.min(16, R.capabilities.getMaxAnisotropy()); makeMats();
   { const pano = new THREE.Group(), R = 95, H = Math.PI * R / 2.357; pano.position.set(17, 1.4, 11); pano.visible = false; scene.add(pano); S.pano = pano;
     [["west", Math.PI], ["east", 0]].forEach(([n, th]) => new THREE.TextureLoader().load(`media/sky_${n}.jpg`, tx => { tx.encoding = THREE.sRGBEncoding; tx.wrapS = THREE.RepeatWrapping; tx.repeat.x = -1; tx.offset.x = 1;
       const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 96, 1, true, th, Math.PI), new THREE.MeshBasicMaterial({ map: tx, side: THREE.BackSide, toneMapped: false, color: 0xf2eee8, fog: false })); pano.add(m); }));
