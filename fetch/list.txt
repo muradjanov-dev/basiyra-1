@@ -1,0 +1,11 @@
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025015_a9f3ff48-08a0-40c2-b4d1-751397f9420c.png pz_living.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025014_2f36c539-3db9-435b-81b6-7ce825c50c2b.png pz_living_flux.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025552_9082825e-5432-454d-9473-249c63ec371f.png pz_dining.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025552_ce83fa37-059f-48e7-aabc-5a0bcedc05d9.png pz_master.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025551_fc21f567-9584-4de7-beb6-3225e33ff834.png pz_bed2.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025552_7d68f0b3-102e-4717-9120-1ba1c98f7793.png pz_ensuite.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261008_025552_dc820284-b74c-4464-a780-f78563f0e387.png pz_balcony.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261007_232712_b2b48e26-adea-4e9f-b5ab-63acecb85aae.mp4 v_build_fpv.mp4
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261007_232712_a2e5f25d-896f-448e-80f2-b6d2972c4194.mp4 v_build_push.mp4
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261007_233157_7b6b1099-efe5-4b52-b2f9-db348d3c160f.png pano_west.png
+https://d8j0ntlcm91z4.cloudfront.net/user_3DgXE917FzizaSktRtot1N6UJly/hf_20261007_233157_c56a661b-70ee-4ac1-8147-844cb088397c.png pano_east.png
