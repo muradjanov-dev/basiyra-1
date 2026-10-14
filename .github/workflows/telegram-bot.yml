@@ -33,6 +33,19 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Translation self-test
         run: python -c "import bot; print('TARJIMA:', bot.translate_sync('Salom, ishlaring qalay?'))"
+      - name: Telegram token check
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN || '8662748515:AAEa6_5yIo6ukyEOEm9CnCMfgFO_WrCKhlo' }}
+        run: |
+          python - <<'PY'
+          import asyncio, os
+          from aiogram import Bot
+          async def main():
+              async with Bot(os.environ["BOT_TOKEN"]) as bot:
+                  me = await bot.get_me()
+                  print(f"Telegram OK: @{me.username}")
+          asyncio.run(main())
+          PY
 
   run:
     needs: selftest
