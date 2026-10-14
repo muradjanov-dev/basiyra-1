@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ChatAction
@@ -9,6 +10,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.utils.chat_action import ChatActionSender
 from deep_translator import GoogleTranslator
+from deep_translator.exceptions import RequestError, TooManyRequests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,12 +58,25 @@ def split_text(text: str, limit: int) -> list[str]:
     return [c for c in chunks if c.strip()]
 
 
+def translate_chunk(translator: GoogleTranslator, chunk: str, attempts: int = 3) -> str:
+    """Bitta bo'lakni tarjima qiladi; vaqtinchalik xatolarda qayta urinadi."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return (translator.translate(chunk) or "").strip()
+        except (TooManyRequests, RequestError):
+            if attempt == attempts:
+                raise
+            log.warning("Tarjima serveri rad etdi, qayta urinish %s/%s", attempt, attempts)
+            time.sleep(2 * attempt)
+    return ""
+
+
 def translate_sync(text: str) -> str:
     """Sinxron tarjima (uz -> ru), uzun matnni bo'laklab tarjima qiladi."""
     translator = GoogleTranslator(source="uz", target="ru")
     result = ""
     for chunk in split_text(text, TRANSLATE_CHUNK):
-        translated = (translator.translate(chunk) or "").strip()
+        translated = translate_chunk(translator, chunk)
         if translated:
             # bo'lak qator oxirida kesilgan bo'lsa, qatorni saqlaymiz
             result += translated + ("\n" if chunk.endswith("\n") else " ")
