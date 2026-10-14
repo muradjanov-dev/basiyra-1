@@ -48,3 +48,8 @@ Repo public bo'lgani uchun Actions bepul. Workflow: `.github/workflows/telegram-
 Bitta job ko'pi bilan 6 soat ishlaydi, shuning uchun har 5 soatda (`cron`) yangi run boshlanib, eskisini bekor qiladi.
 Almashinuv paytida bot bir necha soniya/daqiqa javob bermasligi mumkin — xabarlar yo'qolmaydi, keyin javob beriladi.
 Eslatma: `schedule` faqat asosiy (`main`) branchda ishlaydi — workflow `main` ga merge qilinishi kerak.
+
+### Zaxira tarjimon
+Google bepul tarjima manzili GitHub Actions serverlaridan kelgan so'rovlarni 429 bilan rad etadi.
+Shunday holatda bot avtomatik ravishda bepul, kalitsiz **MyMemory** tarjimoniga o'tadi
+(kuniga taxminan 5000 so'z limiti bor, sifati Google'dan biroz pastroq).

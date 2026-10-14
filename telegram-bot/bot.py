@@ -9,7 +9,7 @@ from aiogram.enums import ChatAction
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.utils.chat_action import ChatActionSender
-from deep_translator import GoogleTranslator
+from deep_translator import GoogleTranslator, MyMemoryTranslator
 from deep_translator.exceptions import RequestError, TooManyRequests
 from dotenv import load_dotenv
 
@@ -22,6 +22,7 @@ logging.basicConfig(
 log = logging.getLogger("translator-bot")
 
 TRANSLATE_CHUNK = 4500  # bitta tarjima so'rovi uchun maksimal uzunlik
+FALLBACK_CHUNK = 500    # MyMemory bitta so'rovda 500 belgigacha qabul qiladi
 MESSAGE_CHUNK = 4000    # bitta Telegram xabari uchun maksimal uzunlik
 
 START_TEXT = (
@@ -58,17 +59,29 @@ def split_text(text: str, limit: int) -> list[str]:
     return [c for c in chunks if c.strip()]
 
 
-def translate_chunk(translator: GoogleTranslator, chunk: str, attempts: int = 3) -> str:
-    """Bitta bo'lakni tarjima qiladi; vaqtinchalik xatolarda qayta urinadi."""
+def translate_fallback(chunk: str) -> str:
+    """Zaxira tarjimon (MyMemory, bepul, kalitsiz) — Google rad etganda ishlatiladi."""
+    translator = MyMemoryTranslator(source="uz-UZ", target="ru-RU")
+    parts = []
+    for piece in split_text(chunk, FALLBACK_CHUNK):
+        translated = (translator.translate(piece) or "").strip()
+        if translated.upper().startswith("MYMEMORY WARNING"):
+            raise RuntimeError(f"MyMemory limiti: {translated}")
+        parts.append(translated)
+    return " ".join(p for p in parts if p)
+
+
+def translate_chunk(translator: GoogleTranslator, chunk: str, attempts: int = 2) -> str:
+    """Bitta bo'lakni Google orqali tarjima qiladi; rad etilsa — zaxira tarjimon."""
     for attempt in range(1, attempts + 1):
         try:
             return (translator.translate(chunk) or "").strip()
         except (TooManyRequests, RequestError):
-            if attempt == attempts:
-                raise
-            log.warning("Tarjima serveri rad etdi, qayta urinish %s/%s", attempt, attempts)
-            time.sleep(2 * attempt)
-    return ""
+            if attempt < attempts:
+                log.warning("Google rad etdi, qayta urinish %s/%s", attempt, attempts)
+                time.sleep(2)
+    log.warning("Google ishlamadi, zaxira tarjimon (MyMemory) ishlatilmoqda")
+    return translate_fallback(chunk)
 
 
 def translate_sync(text: str) -> str:
