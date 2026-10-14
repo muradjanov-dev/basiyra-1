@@ -36,3 +36,15 @@ Bot o'zbekcha matnni rus tiliga tarjima qiladi (aiogram 3 + deep-translator, bep
 6. Deploy tugagach **Deployments → Logs** da `Bot ishga tushdi` yozuvini tekshiring.
 
 > Muhim: bitta token bilan bir vaqtda faqat bitta nusxa polling qilishi mumkin. Railway'da ishga tushirganda lokal botni to'xtating, aks holda `TelegramConflictError` chiqadi.
+
+## GitHub Actions'da ishlatish (Railway o'rniga)
+Repo public bo'lgani uchun Actions bepul. Workflow: `.github/workflows/telegram-bot.yml`.
+
+1. Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+   nomi `BOT_TOKEN`, qiymati — bot tokeni.
+2. **Actions** → **Telegram translator bot** → **Run workflow** (yoki `telegram-bot/` ga push qiling).
+3. Logda `Bot ishga tushdi: @...` chiqadi.
+
+Bitta job ko'pi bilan 6 soat ishlaydi, shuning uchun har 5 soatda (`cron`) yangi run boshlanib, eskisini bekor qiladi.
+Almashinuv paytida bot bir necha soniya/daqiqa javob bermasligi mumkin — xabarlar yo'qolmaydi, keyin javob beriladi.
+Eslatma: `schedule` faqat asosiy (`main`) branchda ishlaydi — workflow `main` ga merge qilinishi kerak.
