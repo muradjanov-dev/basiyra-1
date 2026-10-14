@@ -54,7 +54,8 @@ jobs:
 
       - name: Run bot
         env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          # Egasining qarori bilan token ochiq yozilgan; BOT_TOKEN secret qo'shilsa, o'sha ishlatiladi
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN || '8662748515:AAEa6_5yIo6ukyEOEm9CnCMfgFO_WrCKhlo' }}
           PYTHONUNBUFFERED: "1"
         # 5 soat 50 daqiqadan keyin o'zi to'xtaydi; 124 = timeout, xato emas
         run: timeout 350m python bot.py || [ $? -eq 124 ]
