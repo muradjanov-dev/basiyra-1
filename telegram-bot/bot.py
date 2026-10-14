@@ -112,9 +112,9 @@ async def main() -> None:
         sys.exit(1)
 
     bot = Bot(token=token)
-    me = await bot.get_me()
-    log.info("Bot ishga tushdi: @%s", me.username)
     try:
+        me = await bot.get_me()
+        log.info("Bot ishga tushdi: @%s", me.username)
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
