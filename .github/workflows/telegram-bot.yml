@@ -1,0 +1,74 @@
+name: Telegram translator bot
+
+# Bot GitHub Actions ichida long polling bilan ishlaydi.
+# Bitta job ko'pi bilan 6 soat yashaydi, shuning uchun har 5 soatda yangi
+# run boshlanadi va eskisini bekor qiladi (bir vaqtda faqat bitta nusxa).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */5 * * *"
+  push:
+    branches: [main, claude/telegram-translator-bot-e1cbo4]
+    paths:
+      - "telegram-bot/**"
+      - ".github/workflows/telegram-bot.yml"
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: telegram-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: telegram-bot/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Translation self-test
+        run: python -c "import bot; print('TARJIMA:', bot.translate_sync('Salom, ishlaring qalay?'))"
+      - name: Telegram token check
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN || '8662748515:AAEa6_5yIo6ukyEOEm9CnCMfgFO_WrCKhlo' }}
+        run: |
+          python - <<'PY'
+          import asyncio, os
+          from aiogram import Bot
+          async def main():
+              async with Bot(os.environ["BOT_TOKEN"]) as bot:
+                  me = await bot.get_me()
+                  print(f"Telegram OK: @{me.username}")
+          asyncio.run(main())
+          PY
+
+  run:
+    needs: selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    defaults:
+      run:
+        working-directory: telegram-bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: telegram-bot/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          # Egasining qarori bilan token ochiq yozilgan; BOT_TOKEN secret qo'shilsa, o'sha ishlatiladi
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN || '8662748515:AAEa6_5yIo6ukyEOEm9CnCMfgFO_WrCKhlo' }}
+          PYTHONUNBUFFERED: "1"
+        # 5 soat 50 daqiqadan keyin o'zi to'xtaydi; 124 = timeout, xato emas
+        run: timeout 350m python bot.py || [ $? -eq 124 ]
